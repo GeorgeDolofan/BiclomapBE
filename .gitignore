@@ -1,0 +1,6 @@
+lambda/packages
+
+.terraform
+terraform.tfstate
+terraform.tfstate.backup
+
