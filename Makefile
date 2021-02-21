@@ -15,12 +15,17 @@ $(LAMBDA_EXECUTABLE): $(GO_SRCS)
 	go mod download
 	GOOS=linux go build -o $@ biclomap-be/lambda
 
+build: $(LAMBDA_EXECUTABLE)
+
+test: build
+	exit 1
+
 .ONESHELL:
-aws-plan: $(LAMBDA_EXECUTABLE)
+deploy-plan: $(LAMBDA_EXECUTABLE)
 	cd infrastructure/$(AWS_ENV)
 	terraform plan
 
-aws-apply: $(LAMBDA_EXECUTABLE)
+deploy: $(LAMBDA_EXECUTABLE)
 	cd infrastructure/$(AWS_ENV)
-	terraform apply
+	terraform apply $(DEPLOY_ARGS)
 

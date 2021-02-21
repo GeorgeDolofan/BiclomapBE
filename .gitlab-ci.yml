@@ -1,0 +1,33 @@
+default:
+  image: "golang:1.15"
+
+stages:
+  - build
+  - test
+  - deploy
+
+workflow:
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /-draft$/
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+
+build:
+  stage: build
+  script: make build
+
+test:
+  stage: test
+  script: make test
+
+deploy:
+  stage: deploy
+  before_script:
+    - apt-get update -y
+    - curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+    - apt-add-repository "deb [arch=$(dpkg --print-architecture)] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+    - apt install terraform=0.14.6
+  script:
+    - make deploy DEPLOY_ARGS=-auto-approve
+  when: manual
+

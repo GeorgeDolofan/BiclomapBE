@@ -1,0 +1,2 @@
+aws_profile = "biclomap"
+api_version = ##API_VERSION##
