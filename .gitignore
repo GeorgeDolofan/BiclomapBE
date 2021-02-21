@@ -1,7 +1,4 @@
-**/.terraform
-**/terraform.tfstate
-**/terraform.tfstate.backup
-
+.env
 lambda.zip
 **/__pycache__
 
