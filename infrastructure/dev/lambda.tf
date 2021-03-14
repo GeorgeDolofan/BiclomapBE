@@ -1,19 +1,20 @@
 data "archive_file" "app" {
   type        = "zip"
-  output_path = "../../env/lib/python3.8/site-packages/app.zip"
-  source_dir  = "../../env/lib/python3.8/site-packages"
+  output_path = "../../bin/lambda.zip"
+  source_file = "../../bin/lambda"
 }
 
 resource "aws_lambda_function" "app" {
   function_name = "lambda_app"
-  filename      = "../../lambda.zip"
+  filename      = "../../bin/lambda.zip"
   role          = aws_iam_role.lambda_exec.arn
-  handler       = "app.main.handler"
+  handler       = "lambda"
 
   source_code_hash = data.archive_file.app.output_base64sha256
 
-  runtime = "python3.8"
-  timeout = 15
+  runtime     = "go1.x"
+  timeout     = 15
+  memory_size = 128
 
 }
 

@@ -1,16 +1,16 @@
 # Biclomap Back-End
 
-This is the back-end application, intended to work as an AWS serverless application written in Python
+This is the back-end application, intended to work as an AWS serverless application written in GO
 
 The server-side resources creation is handled using Terraform.
 
 # Setting-up local dev environment
 
-This command will creat the local environment, download the required packages
-then start a local uvicorn server instance:
-```shell
-$ make uvicorn
-```
+Please install `golang` following the official instructions at
+https://golang.org
+
+The build is taken care of a `Makefile`. It containes the required commands to
+build the main binary file from the GO sources.
 
 # Deploying to the AWS Environment
 
