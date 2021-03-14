@@ -18,7 +18,7 @@ $(LAMBDA_EXECUTABLE): $(GO_SRCS)
 build: $(LAMBDA_EXECUTABLE)
 
 test: build
-	exit 1
+	go test biclomap-be/lambda
 
 .ONESHELL:
 deploy-plan: $(LAMBDA_EXECUTABLE)
