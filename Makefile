@@ -4,6 +4,7 @@ API_VERSION=1
 
 PYTHON_ENV_DIR=env
 LAMBDA_EXECUTABLE=bin/lambda
+SWAGGER_JSON=lambda/docs/swagger.json
 
 GO_SRCS:=$(shell find lambda -type f -name '*.go')
 
@@ -15,7 +16,10 @@ $(LAMBDA_EXECUTABLE): $(GO_SRCS)
 	go mod download
 	GOOS=linux go build -o $@ biclomap-be/lambda
 
-build: $(LAMBDA_EXECUTABLE)
+$(SWAGGER_JSON): $(GO_SRCS)
+	cd $(@D)/.. && swag init
+
+build: $(LAMBDA_EXECUTABLE) $(SWAGGER_JSON)
 
 test: build
 	go test biclomap-be/lambda

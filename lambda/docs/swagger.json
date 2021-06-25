@@ -1,0 +1,27 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "This is the Biclomap back-end server",
+        "title": "Biclomap REST API",
+        "contact": {},
+        "version": "1"
+    },
+    "paths": {},
+    "definitions": {
+        "login.FB_LOGIN": {
+            "type": "object",
+            "required": [
+                "id",
+                "name"
+            ],
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

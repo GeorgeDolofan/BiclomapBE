@@ -1,0 +1,18 @@
+definitions:
+  login.FB_LOGIN:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+    required:
+    - id
+    - name
+    type: object
+info:
+  contact: {}
+  description: This is the Biclomap back-end server
+  title: Biclomap REST API
+  version: "1"
+paths: {}
+swagger: "2.0"
