@@ -11,11 +11,12 @@ import (
 
 type BiclomapAWSContext struct {
 	init_err error
-	ddb      *dynamodb.DynamoDB
+	store    *dynastore.Store
+	Ddb      *dynamodb.DynamoDB
 }
 
 const (
-	GIN_CONTEXT_KEY_NAME      = "awscontext"
+	GIN_CONTEXT_AWS_CONTEXT   = "awscontext"
 	GIN_CONTEXT_SESSION_STORE = "session-store"
 )
 
@@ -29,7 +30,7 @@ func init_aws_context() {
 		log.Println(aws_context.init_err)
 		panic(init_err)
 	}
-	aws_context.ddb = dynamodb.New(session)
+	aws_context.Ddb = dynamodb.New(session)
 	log.Println("awscontext initialized.")
 }
 
@@ -39,23 +40,25 @@ func AWSContext() gin.HandlerFunc {
 			init_aws_context()
 			// TODO here we should use a build variable in order to sync with
 			// the terraform resource creation
-			store, err := dynastore.New(
+			var err error
+			aws_context.store, err = dynastore.New(
 				dynastore.Path("/"),
 				dynastore.TableName("biclomap-sessions"),
+				dynastore.DynamoDB(aws_context.Ddb),
 			)
 			if err != nil {
 				log.Fatalln(err)
 				panic(err)
 			}
-			c.Set(GIN_CONTEXT_SESSION_STORE, store)
 		}
-		c.Set(GIN_CONTEXT_KEY_NAME, aws_context)
+		c.Set(GIN_CONTEXT_SESSION_STORE, aws_context.store)
+		c.Set(GIN_CONTEXT_AWS_CONTEXT, aws_context)
 		c.Next()
 	}
 }
 
 func GetFromGinContext(c *gin.Context) *BiclomapAWSContext {
-	return c.MustGet(GIN_CONTEXT_KEY_NAME).(*BiclomapAWSContext)
+	return c.MustGet(GIN_CONTEXT_AWS_CONTEXT).(*BiclomapAWSContext)
 }
 
 func GetStore(c *gin.Context) *dynastore.Store {
