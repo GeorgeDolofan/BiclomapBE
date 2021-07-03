@@ -36,10 +36,10 @@ func Facebook(c *gin.Context) {
 		input := &dynamodb.GetItemInput{
 			Key: map[string]*dynamodb.AttributeValue{
 				"UserId": {
-					S: aws.String(fb_login.ID),
+					S: aws.String("fb-" + fb_login.ID),
 				},
 			},
-			TableName: aws.String("facebook-users"),
+			TableName: aws.String("users"),
 		}
 		res, err := aws_ctx.Ddb.GetItem(input)
 		if err != nil {
@@ -58,13 +58,13 @@ func Facebook(c *gin.Context) {
 			input := &dynamodb.PutItemInput{
 				Item: map[string]*dynamodb.AttributeValue{
 					"UserId": {
-						S: aws.String(fb_login.ID),
+						S: aws.String("fb-" + fb_login.ID),
 					},
 					"Name": {
 						S: aws.String(fb_login.NAME),
 					},
 				},
-				TableName: aws.String("facebook-users"),
+				TableName: aws.String("users"),
 			}
 			_, err := aws_ctx.Ddb.PutItem(input)
 			if err != nil {

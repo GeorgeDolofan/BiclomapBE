@@ -1,5 +1,5 @@
-resource "aws_dynamodb_table" "facebook-users" {
-  name           = "facebook-users"
+resource "aws_dynamodb_table" "users" {
+  name           = "users"
   billing_mode   = "PROVISIONED"
   read_capacity  = 20
   write_capacity = 20
@@ -16,7 +16,7 @@ resource "aws_dynamodb_table" "facebook-users" {
   }
 
   tags = {
-    Name        = "facebook-users"
+    Name        = "users"
     Environment = "dev"
   }
 }

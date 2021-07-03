@@ -86,7 +86,7 @@ resource "aws_iam_policy" "lambda_dynamodb_access_facebook_users" {
         "dynamodb:PutItem",
         "dynamodb:UpdateItem"
       ],
-      "Resource" : aws_dynamodb_table.facebook-users.arn
+      "Resource" : aws_dynamodb_table.users.arn
       }
     ]
     }
