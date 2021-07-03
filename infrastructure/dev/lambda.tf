@@ -20,6 +20,14 @@ resource "aws_lambda_function" "app" {
     aws_iam_role_policy_attachment.lambda_logs,
     aws_cloudwatch_log_group.example,
   ]
+
+  environment {
+    variables = {
+      SMTP_SERVER       = "mail.rusu.info",
+      SMTP_FROM         = "notifications@biclomap.com"
+      BICLOMAP_BASE_URL = "https://dev.biclomap.com"
+    }
+  }
 }
 
 resource "aws_lambda_permission" "apigw" {
@@ -68,8 +76,8 @@ resource "aws_iam_role_policy_attachment" "lambda_logs" {
   policy_arn = aws_iam_policy.lambda_logging.arn
 }
 
-resource "aws_iam_policy" "lambda_dynamodb_access_facebook_users" {
-  name        = "dynamodb_access_facebook_users"
+resource "aws_iam_policy" "lambda_dynamodb_access_users" {
+  name        = "dynamodb_access_users"
   path        = "/"
   description = "IAM policy to access dynamodb"
 
@@ -94,9 +102,9 @@ resource "aws_iam_policy" "lambda_dynamodb_access_facebook_users" {
 
 }
 
-resource "aws_iam_role_policy_attachment" "lambda_db_facebook_users" {
+resource "aws_iam_role_policy_attachment" "lambda_db_users" {
   role       = aws_iam_role.lambda_exec.name
-  policy_arn = aws_iam_policy.lambda_dynamodb_access_facebook_users.arn
+  policy_arn = aws_iam_policy.lambda_dynamodb_access_users.arn
 }
 
 resource "aws_iam_policy" "lambda_dynamodb_access_sessions" {
@@ -128,4 +136,30 @@ resource "aws_iam_policy" "lambda_dynamodb_access_sessions" {
 resource "aws_iam_role_policy_attachment" "lambda_db_sessions" {
   role       = aws_iam_role.lambda_exec.name
   policy_arn = aws_iam_policy.lambda_dynamodb_access_sessions.arn
+}
+
+resource "aws_iam_policy" "lambda_secrets_access" {
+  name        = "biclomap_secrets_access"
+  path        = "/"
+  description = "IAM policy to allow access to Secrets Manager"
+
+  policy = jsonencode({
+    Version : "2012-10-17",
+    Statement : [
+      {
+        Effect : "Allow",
+        Action : [
+          "secretsmanager:GetSecretValue",
+        ],
+        Resource : [
+          "arn:aws:secretsmanager:eu-central-1:935596254689:secret:biclomap_smtp_password-ss7aEL"
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_secrets" {
+  role       = aws_iam_role.lambda_exec.name
+  policy_arn = aws_iam_policy.lambda_secrets_access.arn
 }
