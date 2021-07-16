@@ -49,6 +49,7 @@ func routerEngine() *gin.Engine {
 	r.POST("/login/facebook", login.Facebook)
 	r.POST("/login/email", login.Email)
 	r.POST("/login/email/signup", login.EmailSignup)
+	r.POST("/login/email/confirm", login.EmailConfirm)
 
 	r.GET("/fb/redirect", facebook.Redirect)
 	r.GET("/fb/deauthorize", facebook.Deauthorize)

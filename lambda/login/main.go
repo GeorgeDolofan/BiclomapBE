@@ -18,6 +18,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-sdk-go/service/secretsmanager"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -37,6 +38,10 @@ type Facebook_User struct {
 type EMAIL_SIGNUP struct {
 	EMAIL    string `json:"email" binding:"required"`
 	PASSWORD string `json:"password" binding:"required"`
+}
+
+type EMAIL_CONFIRM struct {
+	TOKEN string `json:"token" binding:"required"`
 }
 
 func EmailSignup(c *gin.Context) {
@@ -133,6 +138,12 @@ func EmailSignup(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"msg": "Server incorrectly configured, please contact the administrator"})
 		return
 	}
+	email_confirmation_page := os.Getenv("EMAIL_CONFIRMATION_PAGE")
+	if email_confirmation_page == "" {
+		log.Println("Please specify the EMAIL_CONFIRMATION_PAGE variable")
+		c.JSON(http.StatusInternalServerError, gin.H{"msg": "Server incorrectly configured, please contact the administrator"})
+		return
+	}
 
 	// ok, everything looks to be correctly configured so far, so let's proceed
 	// to store this new subscription attempt and then send the e-mail
@@ -186,7 +197,7 @@ func EmailSignup(c *gin.Context) {
 		"Somobody - probably you - signed you-up to Biclomap.\r\n" +
 		"If that's correct, then please click the link below\r\n" +
 		"to confirm your e-mail address:\r\n" +
-		biclomap_base_url + "/email-confirmation?token=" + subs_token + "\r\n" +
+		biclomap_base_url + "/" + email_confirmation_page + "?token=" + subs_token + "\r\n" +
 		"\r\n\r\n" +
 		"Cheers,\r\n" +
 		"The Biclomap Team")
@@ -198,6 +209,49 @@ func EmailSignup(c *gin.Context) {
 		log.Println("Successfully sent message")
 		c.JSON(http.StatusOK, gin.H{"msg": "confirmation mail sent"})
 	}
+}
+
+// email confirmation will turn an existing signup-XXXXXX UserId into
+// email-XXXX. The initial signup-XXXXX record was previously created by the
+// EmailSignup method
+func EmailConfirm(c *gin.Context) {
+	var email_confirm EMAIL_CONFIRM
+	err := c.BindJSON(&email_confirm)
+	if err != nil {
+		log.Println("Failed to bind to input JSON")
+		c.JSON(http.StatusNotFound, gin.H{"msg": "Argument error"})
+		return
+	}
+	aws_ctx := awscontext.GetFromGinContext(c)
+	delinput := &dynamodb.DeleteItemInput{
+		Key: map[string]*dynamodb.AttributeValue{
+			"UserId": {
+				S: aws.String("signup-" + email_confirm.TOKEN),
+			},
+		},
+		ConditionExpression: aws.String("attribute_exists(UserId)"),
+		ReturnValues:        aws.String(dynamodb.ReturnValueAllOld),
+		TableName:           aws.String("users"),
+	}
+	old_val, delerr := aws_ctx.Ddb.DeleteItem(delinput)
+	if delerr != nil {
+		log.Println(delerr.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"message": "bad request"})
+		return
+	}
+	old_attributes := old_val.Attributes
+	old_attributes["UserId"], _ = dynamodbattribute.Marshal("email-" + email_confirm.TOKEN)
+	input := &dynamodb.PutItemInput{
+		Item:      old_attributes,
+		TableName: aws.String("users"),
+	}
+	_, dberr := aws_ctx.Ddb.PutItem(input)
+	if dberr != nil {
+		log.Println("Cannot PutItem into the ddb", dberr)
+		c.JSON(http.StatusInternalServerError, gin.H{"msg": "Database error"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully confirmed token " + email_confirm.TOKEN})
 }
 
 // @summary Used to authenticate a Facebook user

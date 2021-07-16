@@ -23,9 +23,10 @@ resource "aws_lambda_function" "app" {
 
   environment {
     variables = {
-      SMTP_SERVER       = "mail.rusu.info",
-      SMTP_FROM         = "notifications@biclomap.com"
-      BICLOMAP_BASE_URL = "https://dev.biclomap.com"
+      SMTP_SERVER             = "mail.rusu.info",
+      SMTP_FROM               = "notifications@biclomap.com"
+      BICLOMAP_BASE_URL       = "https://dev.biclomap.com"
+      EMAIL_CONFIRMATION_PAGE = "email-confirmation.html"
     }
   }
 }
@@ -92,7 +93,8 @@ resource "aws_iam_policy" "lambda_dynamodb_access_users" {
         "dynamodb:Scan",
         "dynamodb:BatchWriteItem",
         "dynamodb:PutItem",
-        "dynamodb:UpdateItem"
+        "dynamodb:UpdateItem",
+        "dynamodb:DeleteItem"
       ],
       "Resource" : aws_dynamodb_table.users.arn
       }
