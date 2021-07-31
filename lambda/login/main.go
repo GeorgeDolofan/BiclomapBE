@@ -2,6 +2,7 @@ package login
 
 import (
 	"biclomap-be/lambda/awscontext"
+	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
@@ -321,6 +322,88 @@ func Facebook(c *gin.Context) {
 	}
 }
 
+type EMAIL_LOGIN struct {
+	EMAIL    string `json:"email" binding:"required"`
+	PASSWORD string `json:"password" binding:"required"`
+}
+
+type UserInfo struct {
+	UserId   string
+	Password []byte `dynamodbav:"password"`
+	Salt     []byte `dynamodbav:"salt"`
+	Token    string `dynamodbav:"token"`
+	Name     string
+}
+
 func Email(c *gin.Context) {
-	c.String(404, "Not yet implemented")
+	var email_login EMAIL_LOGIN
+	bind_err := c.BindJSON(&email_login)
+	if bind_err != nil {
+		log.Println("Failed to bind to input JSON")
+		c.JSON(http.StatusNotFound, gin.H{"msg": "Argument error"})
+		return
+	}
+	if !strings.Contains(email_login.EMAIL, "@") {
+		log.Println("EMail looks to be incorrect", email_login.EMAIL)
+		c.JSON(http.StatusNotFound, gin.H{"msg": "Argument error"})
+		return
+	}
+	if len(email_login.PASSWORD) == 0 {
+		log.Println("Password cannot be empty")
+		c.JSON(http.StatusNotFound, gin.H{"msg": "Password cannot be empty"})
+		return
+	}
+	// lookup user in the database
+	aws_ctx := awscontext.GetFromGinContext(c)
+	input := &dynamodb.QueryInput{
+		IndexName:                aws.String("EmailIndex"),
+		KeyConditionExpression:   aws.String("email = :v_email"),
+		ExpressionAttributeNames: map[string]*string{"#T": aws.String("token"), "#N": aws.String("Name")},
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":v_email": {S: aws.String(email_login.EMAIL)},
+		},
+		ProjectionExpression: aws.String("UserId, password, salt, #T, #N"),
+		TableName:            aws.String("users"),
+	}
+	res, err := aws_ctx.Ddb.Query(input)
+	if err != nil {
+		log.Println(err.Error())
+		c.AbortWithStatus(500)
+		return
+	}
+	log.Println("Query returns: ", res)
+	if *res.Count != 1 {
+		log.Println("OOPS, we found more than 1 user with these credentials", email_login.EMAIL)
+		c.JSON(http.StatusInternalServerError, gin.H{"msg": "Unexpected multiple accounts for this user"})
+		return
+	}
+	userInfo := UserInfo{}
+	read_err := dynamodbattribute.UnmarshalMap(res.Items[0], &userInfo)
+	if read_err != nil {
+		log.Println("Cannot UnmarshalMap: ", read_err)
+		c.JSON(http.StatusInternalServerError, gin.H{"msg": "Unexpected error while accessing user account"})
+		return
+	}
+	// check passwords do match
+	log.Println("UserInfo: ", userInfo)
+	hash_password := pbkdf2.Key([]byte(email_login.PASSWORD), userInfo.Salt, 4096, sha256.Size, sha256.New)
+	if !bytes.Equal(hash_password, userInfo.Password) {
+		log.Println("Passwords do not match")
+		c.JSON(http.StatusBadRequest, gin.H{"msg": "Incorrect credentials"})
+		return
+	}
+	// prepare the JWT token
+	jwtWrapper := JwtWrapper{
+		SecretKey:       "xxxx", // TODO use a key extracted from the ENV here
+		Issuer:          "biclomap",
+		ExpirationHours: 24,
+	}
+	jwt_token, jwt_err := jwtWrapper.GenerateToken(email_login.EMAIL, userInfo.UserId)
+	if jwt_err != nil {
+		log.Println("Cannot create JWT token", jwt_err)
+		c.JSON(http.StatusInternalServerError, gin.H{"msg": "JWT Error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"Token": jwt_token})
 }

@@ -9,10 +9,23 @@ resource "aws_dynamodb_table" "users" {
     name = "UserId"
     type = "S"
   }
+  attribute {
+    name = "email"
+    type = "S"
+  }
 
   ttl {
     attribute_name = "TimeToExist"
     enabled        = true
+  }
+
+  global_secondary_index {
+    name               = "EmailIndex"
+    hash_key           = "email"
+    write_capacity     = 10
+    read_capacity      = 10
+    projection_type    = "INCLUDE"
+    non_key_attributes = ["password", "salt", "token", "Name"]
   }
 
   tags = {

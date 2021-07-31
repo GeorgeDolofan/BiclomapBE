@@ -8,6 +8,7 @@ require (
 	github.com/appleboy/gin-jwt/v2 v2.6.4 // indirect
 	github.com/aws/aws-sdk-go v1.38.12
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gin-contrib/cors v1.3.1
 	github.com/gin-gonic/gin v1.7.1
 	github.com/go-openapi/spec v0.20.3 // indirect

@@ -96,7 +96,10 @@ resource "aws_iam_policy" "lambda_dynamodb_access_users" {
         "dynamodb:UpdateItem",
         "dynamodb:DeleteItem"
       ],
-      "Resource" : aws_dynamodb_table.users.arn
+      Resource : [
+        aws_dynamodb_table.users.arn,
+        "${aws_dynamodb_table.users.arn}/index/*"
+      ]
       }
     ]
     }
