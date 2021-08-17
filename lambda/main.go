@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/apex/gateway"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
@@ -12,7 +13,8 @@ import (
 	"biclomap-be/lambda/login"
 	"biclomap-be/lambda/ping"
 
-	"github.com/apex/gateway"
+	_ "biclomap-be/lambda/docs"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -41,7 +43,8 @@ func routerEngine() *gin.Engine {
 	r.Use(CORSMiddleware())
 	r.Use(awscontext.AWSContext())
 
-	swagger_url := ginSwagger.URL("https://dev.biclomap.com/swagger/doc.json")
+	swagger_url := ginSwagger.URL("https://dev.biclomap.com/api/swagger/doc.json")
+	// swagger_url := ginSwagger.URL("http://localhost:3000/swagger/doc.json")
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, swagger_url))
 
 	r.GET("/ping", ping.Handler)
@@ -59,7 +62,21 @@ func routerEngine() *gin.Engine {
 // @title Biclomap REST API
 // @version 1
 // @description This is the Biclomap back-end server
+//
+// @contact.name API Support
+// @contact.url http://dev.biclomap.com/support
+// @contact.email api-support@biclomap.com
+//
+// @license.name GPL v3.0
+//
+// @host dev.biclomap.com
+// @BasePath /api
+// @schemes https
 func main() {
 	addr := ":" + os.Getenv("PORT")
 	log.Fatal(gateway.ListenAndServe(addr, routerEngine()))
+	// r := routerEngine()
+	// if err := r.Run(addr); err != nil {
+	// 	log.Fatal(err)
+	// }
 }

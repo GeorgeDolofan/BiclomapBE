@@ -1,4 +1,32 @@
+basePath: /api
 definitions:
+  login.EMAIL_CONFIRM:
+    properties:
+      token:
+        type: string
+    required:
+    - token
+    type: object
+  login.EMAIL_LOGIN:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  login.EMAIL_SIGNUP:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
   login.FB_LOGIN:
     properties:
       id:
@@ -9,10 +37,183 @@ definitions:
     - id
     - name
     type: object
+  login.LOGIN_INFORMATION:
+    properties:
+      token:
+        type: string
+    required:
+    - token
+    type: object
+host: dev.biclomap.com
 info:
-  contact: {}
+  contact:
+    email: api-support@biclomap.com
+    name: API Support
+    url: http://dev.biclomap.com/support
   description: This is the Biclomap back-end server
+  license:
+    name: GPL v3.0
   title: Biclomap REST API
   version: "1"
-paths: {}
+paths:
+  /login/email:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Users having succesffuly signed-up and then succesfully having
+        confirmed their e-mai will be able to effectively login into
+        the application using this method call. The system will create
+        a JWT token. Any subsequent API call will need to provide this
+        token in the request body.
+      parameters:
+      - description: Email and password structure
+        in: body
+        name: email_login
+        required: true
+        schema:
+          $ref: '#/definitions/login.EMAIL_LOGIN'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/login.LOGIN_INFORMATION'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Perform email-based login and return JWT token
+      tags:
+      - Login
+  /login/email/confirm:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        This method should be called when the user clicks the link
+        provided in the e-mail sent by the email signup call. This
+        method will effectively activate the user account and, if
+        successful, the user will be able to login using the e-mail
+        and password provided upon calling the email signup method
+      parameters:
+      - description: email confirmation structure
+        in: body
+        name: email_confirm
+        required: true
+        schema:
+          $ref: '#/definitions/login.EMAIL_CONFIRM'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: json
+        "400":
+          description: Bad Request
+          schema:
+            type: json
+        "404":
+          description: Not Found
+          schema:
+            type: json
+        "500":
+          description: Internal Server Error
+          schema:
+            type: json
+      summary: Confirms an e-mail
+      tags:
+      - Subscribe
+  /login/email/signup:
+    post:
+      description: |-
+        This method starts the new user registration process. It adds
+        a new record to the database. The password is stored in hashed form. Then
+        it automatically sends an e-mail to the email address given in the parameter
+        That e-mail contains a verification token, that's also computed here.
+      parameters:
+      - description: Email signup
+        in: body
+        name: email_signup
+        required: true
+        schema:
+          $ref: '#/definitions/login.EMAIL_SIGNUP'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Signup new user by their e-mail
+      tags:
+      - Subscribe
+  /login/facebook:
+    post:
+      consumes:
+      - application/json
+      description: This is called after user successfully loged-in with Facebook
+      parameters:
+      - description: login structure
+        in: body
+        name: fb_login
+        required: true
+        schema:
+          $ref: '#/definitions/login.FB_LOGIN'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/login.LOGIN_INFORMATION'
+      summary: Open session for facebook-authenticated user
+      tags:
+      - Login
+  /ping:
+    get:
+      consumes:
+      - '*/*'
+      description: Get the status of the API
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Show the status of the API
+      tags:
+      - HealthCheck
+schemes:
+- https
 swagger: "2.0"

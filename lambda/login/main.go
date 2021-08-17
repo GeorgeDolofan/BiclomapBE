@@ -45,6 +45,19 @@ type EMAIL_CONFIRM struct {
 	TOKEN string `json:"token" binding:"required"`
 }
 
+// @Summary Signup new user by their e-mail
+// @Description This method starts the new user registration process. It adds
+// @Description a new record to the database. The password is stored in hashed form. Then
+// @Description it automatically sends an e-mail to the email address given in the parameter
+// @Description That e-mail contains a verification token, that's also computed here.
+// @Accapt json
+// @Produce json
+// @Param email_signup body EMAIL_SIGNUP true "Email signup"
+// @Success 200 {object} map[string]string
+// @Failure 500 {object} map[string]interface{}
+// @Failure 404 {object} map[string]string
+// @Router /login/email/signup [post]
+// @Tags Subscribe
 func EmailSignup(c *gin.Context) {
 	var email_signup EMAIL_SIGNUP
 	err := c.BindJSON(&email_signup)
@@ -212,6 +225,21 @@ func EmailSignup(c *gin.Context) {
 	}
 }
 
+// @Summary Confirms an e-mail
+// @Description This method should be called when the user clicks the link
+// @Description provided in the e-mail sent by the email signup call. This
+// @Description method will effectively activate the user account and, if
+// @Description successful, the user will be able to login using the e-mail
+// @Description and password provided upon calling the email signup method
+// @Param email_confirm body EMAIL_CONFIRM true "email confirmation structure"
+// @Accept json
+// @Produce json
+// @success 200 json map[string]string
+// @failure 500 json map[string]string
+// @failure 400 json map[string]string
+// @failure 404 json map[string]string
+// @Router /login/email/confirm [post]
+// @Tags Subscribe
 // email confirmation will turn an existing signup-XXXXXX UserId into
 // email-XXXX. The initial signup-XXXXX record was previously created by the
 // EmailSignup method
@@ -255,10 +283,15 @@ func EmailConfirm(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully confirmed token " + email_confirm.TOKEN})
 }
 
-// @summary Used to authenticate a Facebook user
+// @Summary Open session for facebook-authenticated user
+// @Description This is called after user successfully loged-in with Facebook
 // @Accept json
 // @Produce json
 // @Param fb_login body FB_LOGIN true "login structure"
+// @Success 200 {object} LOGIN_INFORMATION
+// @Tags Login
+// @Router /login/facebook [post]
+// TODO this method should be modified in order to also return the JWT token
 func Facebook(c *gin.Context) {
 	var fb_login FB_LOGIN
 	err := c.BindJSON(&fb_login)
@@ -327,6 +360,10 @@ type EMAIL_LOGIN struct {
 	PASSWORD string `json:"password" binding:"required"`
 }
 
+type LOGIN_INFORMATION struct {
+	Token string `json:"token" binding:"required"`
+}
+
 type UserInfo struct {
 	UserId   string
 	Password []byte `dynamodbav:"password"`
@@ -335,6 +372,21 @@ type UserInfo struct {
 	Name     string
 }
 
+// @Summary Perform email-based login and return JWT token
+// @Description Users having succesffuly signed-up and then succesfully having
+// @Description confirmed their e-mai will be able to effectively login into
+// @Description the application using this method call. The system will create
+// @Description a JWT token. Any subsequent API call will need to provide this
+// @Description token in the request body.
+// @Tags Login
+// @Accept json
+// @Produce json
+// @Param email_login body EMAIL_LOGIN true "Email and password structure"
+// @success 200 {object} LOGIN_INFORMATION
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Router /login/email [post]
 func Email(c *gin.Context) {
 	var email_login EMAIL_LOGIN
 	bind_err := c.BindJSON(&email_login)
@@ -368,7 +420,7 @@ func Email(c *gin.Context) {
 	res, err := aws_ctx.Ddb.Query(input)
 	if err != nil {
 		log.Println(err.Error())
-		c.AbortWithStatus(500)
+		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
 	log.Println("Query returns: ", res)
@@ -405,5 +457,8 @@ func Email(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"Token": jwt_token})
+	login_information := LOGIN_INFORMATION{
+		Token: jwt_token,
+	}
+	c.JSON(http.StatusOK, login_information)
 }

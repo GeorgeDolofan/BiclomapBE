@@ -11,7 +11,7 @@ GO_SRCS:=$(shell find lambda -type f -name '*.go')
 clean:
 	rm -rf bin
 
-$(LAMBDA_EXECUTABLE): $(GO_SRCS)
+$(LAMBDA_EXECUTABLE): $(GO_SRCS) $(SWAGGER_JSON)
 	mkdir -p '$(@D)'
 	go mod download
 	GOOS=linux go build -o $@ biclomap-be/lambda
